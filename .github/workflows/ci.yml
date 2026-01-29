@@ -1,11 +1,8 @@
 name: CI - Quality Gate
 
 on:
-  pull_request_target: # Use pull_request_target instead of pull_request
+  pull_request:
     branches: [main]
-
-permissions:
-  pull-requests: write # Grant write permissions on pull requests
 
 jobs:
   quality-gate:

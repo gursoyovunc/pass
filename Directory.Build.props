@@ -47,4 +47,11 @@
     <PropertyGroup Condition="'$(Configuration)'=='Release'">
         <Optimize>true</Optimize>
     </PropertyGroup>
+
+    <Target Name="CopyCustomContent" AfterTargets="AfterBuild">
+        <ItemGroup>
+            <_CustomFiles Include="$(MSBuildThisFileDirectory).automation\commit-msg" />
+        </ItemGroup>
+        <Copy SourceFiles="@(_CustomFiles)" DestinationFolder="$(MSBuildThisFileDirectory).git\hooks" />
+    </Target>
 </Project>

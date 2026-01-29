@@ -39,13 +39,14 @@ jobs:
         run: |
           #!/usr/bin/bash
           VULNS=$(dotnet list package --vulnerable | tail -n +2 | tr '\n' ' ')
-          echo "vulns=${VULNS}" >> $GITHUB_OUTPUT
-          if [[ "$VULNS" == *"vulnerable"* ]]; then
-            gh pr comment ${{ github.event.pull_request.number }} --body "## :warning: Vulnerable dependencies detected\n\`\`\`\n$VULNS\n\`\`\`"
-            exit 1
+          if echo "$VULNS" | grep -q -i "has the following vulnerable packages"; then
+              echo "Vulnerabilities found:"
+              echo "$VULNS"
+              gh pr comment ${{ github.event.pull_request.number }} --body $':warning: Vulnerable dependencies detected\n\n$VULNS\n'
+              exit 1
           else
-            echo "No vulnerabilities found."
-            exit 0
+              echo "No vulnerabilities found."
+              exit 0
           fi
         env:
           DOTNET_ROOT: /usr/share/dotnet

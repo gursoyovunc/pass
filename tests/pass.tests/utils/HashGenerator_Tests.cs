@@ -2,7 +2,7 @@
 
 namespace pass.tests.utils;
 
-public class HashMachine_Tests
+public class HashGenerator_Tests
 {
     private static byte[] Salt(int size = 16)
     {

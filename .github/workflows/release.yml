@@ -1,0 +1,97 @@
+name: Release / Pre-release
+
+on:
+  # Trigger on tag push (official release) or PR merge (pre-release)
+  push:
+    tags:
+      - 'v*.*.*'
+  pull_request:
+    types: [closed]
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+        rid: [win-x64, win-arm64, linux-x64, linux-arm64, osx-x64, osx-arm64]
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Required for GitVersion
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      # Install GitVersion
+      - name: Install GitVersion
+        run: dotnet tool install --global GitVersion.Tool
+
+      # Determine version (official release if tag, else pre-release from PR)
+      - name: Determine version
+        id: gitversion
+        run: |
+          git fetch --all --tags
+          if [[ "${GITHUB_EVENT_NAME}" == "push" ]]; then
+            # Official release from tag
+            VERSION=$(gitversion /output json /showvariable FullSemVer)
+          elif [[ "${GITHUB_EVENT_NAME}" == "pull_request" ]]; then
+            # Pre-release from PR labels
+            PR_LABELS=$(gh pr view ${{ github.event.pull_request.number }} --json labels -q '.labels[].name')
+            if [[ "$PR_LABELS" == *"pr:alpha"* ]]; then
+              PRE="alpha"
+            elif [[ "$PR_LABELS" == *"pr:beta"* ]]; then
+              PRE="beta"
+            else
+              PRE=""
+            fi
+
+            BASE=$(gitversion /output json /showvariable SemVer)
+            if [ -n "$PRE" ]; then
+              VERSION="${BASE}-${PRE}.${GITHUB_RUN_NUMBER}"
+            else
+              VERSION=$BASE
+            fi
+          fi
+
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Determined version: $VERSION"
+
+      # Restore dependencies
+      - name: Restore
+        run: dotnet restore src/MyApp/MyApp.csproj
+
+      # Publish single-file, trimmed, self-contained EXE with version & icon
+      - name: Publish EXE
+        run: |
+          dotnet publish src/MyApp/MyApp.csproj \
+            -c Release -r ${{ matrix.rid }} \
+            /p:PublishSingleFile=true \
+            /p:PublishTrimmed=true \
+            /p:SelfContained=true \
+            /p:Version=${{ steps.gitversion.outputs.version }} \
+            /p:AssemblyVersion=${{ steps.gitversion.outputs.version }} \
+            /p:FileVersion=${{ steps.gitversion.outputs.version }} \
+            /p:InformationalVersion=${{ steps.gitversion.outputs.version }} \
+            /p:ApplicationIcon=src/MyApp/icon.ico \
+            -o out/${{ matrix.rid }}
+
+      # Zip artifacts
+      - name: Zip Artifacts
+        run: |
+          cd out/${{ matrix.rid }}
+          zip -r ../../${{ matrix.rid }}.zip *
+
+      # Upload GitHub Release / Pre-release
+      - name: Upload Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.gitversion.outputs.version }}
+          name: "Release ${{ steps.gitversion.outputs.version }}"
+          draft: false
+          prerelease: ${{ github.event_name == 'pull_request' }}
+          files: out/${{ matrix.rid }}.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,73 @@
+name: CI - Quality Gate
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  quality-gate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      # Restore dependencies
+      - name: Restore dependencies
+        run: dotnet restore
+
+      # Build + static analysis
+      - name: Build & Analyze
+        run: dotnet build -c Debug -warnaserror
+
+      # Security code scan
+      - name: Security Code Scan
+        run: dotnet build -c Debug
+
+      # Check vulnerable dependencies
+      - name: Install GitHub CLI
+        run: sudo apt install gh -y
+      - name: Check vulnerable dependencies
+        id: deps
+        run: |
+          VULNS=$(dotnet list package --vulnerable)
+          echo "vulns=$VULNS" >> $GITHUB_OUTPUT
+          if [ -n "$VULNS" ]; then
+            gh pr comment ${{ github.event.pull_request.number }} --body "## :warning: Vulnerable dependencies detected\n\`\`\`\n$VULNS\n\`\`\`"
+            exit 1
+
+      # Run tests with coverage
+      - name: Test with coverage
+        id: coverage
+        run: |
+          dotnet test tests/MyApp.Tests/MyApp.Tests.csproj \
+            -c Debug --no-build \
+            --collect:"XPlat Code Coverage" \
+            /p:CoverletOutputFormat=cobertura \
+            /p:Threshold=80 /p:ThresholdType=line /p:ThresholdStat=total
+
+          COVERAGE=$(xmllint --xpath "string(//coverage/@line-rate)" coverage-report/Cobertura.xml)
+          echo "coverage=$COVERAGE" >> $GITHUB_OUTPUT
+
+      # Comment coverage on PR
+      - name: Comment coverage on PR
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            ## Code Coverage Report
+            Threshold: 80%
+            Current coverage: ${{ steps.coverage.outputs.coverage }}
+
+      # Generate coverage artifact
+      - name: Generate coverage report
+        run: |
+          reportgenerator -reports:**/coverage.cobertura.xml -targetdir:coverage-report -reporttypes:Html
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage-report

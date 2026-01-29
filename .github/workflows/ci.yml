@@ -63,6 +63,7 @@ jobs:
           dotnet test tests/pass.tests/pass.tests.csproj \
             -c Debug --no-build \
             --collect:"XPlat Code Coverage" \
+            /p:CoverletOutput=coverage-report/ \
             /p:CoverletOutputFormat=cobertura \
             /p:Threshold=80 /p:ThresholdType=line /p:ThresholdStat=total
 

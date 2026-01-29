@@ -1,0 +1,50 @@
+<Project>
+    <PropertyGroup>
+        <!-- Default build configuration -->
+        <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+
+        <!-- Target framework for all projects -->
+        <TargetFramework>net10.0</TargetFramework>
+
+        <!-- Output folder structure -->
+        <OutputPath>bin\$(Configuration)\</OutputPath>
+
+        <!-- Assembly / File version placeholders -->
+        <Version>0.0.0</Version>
+        <AssemblyVersion>0.0.0.0</AssemblyVersion>
+        <FileVersion>0.0.0.0</FileVersion>
+        <InformationalVersion>0.0.0+local</InformationalVersion>
+
+        <!-- Treat all warnings as errors (good CI practice) -->
+        <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+
+        <!-- Nullable reference types enabled -->
+        <Nullable>enable</Nullable>
+
+        <!-- Implicit usings enabled -->
+        <ImplicitUsings>enable</ImplicitUsings>
+
+        <!-- Analyzer rules -->
+        <RunAnalyzersDuringBuild>true</RunAnalyzersDuringBuild>
+        <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+
+        <!-- Default single-file publish options (can be overridden in release workflow) -->
+        <PublishSingleFile>false</PublishSingleFile>
+        <SelfContained>false</SelfContained>
+        <PublishTrimmed>false</PublishTrimmed>
+
+        <!-- Default package settings (optional) -->
+        <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+        <IncludeSymbols>false</IncludeSymbols>
+    </PropertyGroup>
+
+    <!-- Optional: CI / local build safety -->
+    <PropertyGroup Condition="'$(Configuration)'=='Debug'">
+        <DebugType>portable</DebugType>
+        <Optimize>false</Optimize>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(Configuration)'=='Release'">
+        <Optimize>true</Optimize>
+    </PropertyGroup>
+</Project>

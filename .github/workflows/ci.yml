@@ -32,11 +32,19 @@ jobs:
       - name: Check vulnerable dependencies
         id: deps
         run: |
-          VULNS=$(dotnet list package --vulnerable)
-          echo "vulns=$VULNS" >> $GITHUB_OUTPUT
-          if [ -n "$VULNS" ]; then
-            gh pr comment ${{ github.event.pull_request.number }} --body "## :warning: Vulnerable dependencies detected\n\`\`\`\n$VULNS\n\`\`\`"
+          #!/usr/bin/bash
+          VULNS=$(dotnet list package --vulnerable | tail -n +2)
+          echo "vulns=${VULNS}" >> $GITHUB_OUTPUT
+          if [[ "$VULNS" == *"vulnerable"* ]]; then
+            gh pr comment 1 --body "## :warning: Vulnerable dependencies detected\n\`\`\`\n$VULNS\n\`\`\`"
             exit 1
+          else
+            echo "No vulnerabilities found."
+            exit 0
+          fi
+        env:
+          DOTNET_ROOT: /usr/share/dotnet
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       # Run tests with coverage
       - name: Test with coverage

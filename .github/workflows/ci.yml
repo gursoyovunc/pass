@@ -56,7 +56,7 @@ jobs:
       - name: Test with coverage
         id: coverage
         run: |
-          dotnet test tests/MyApp.Tests/MyApp.Tests.csproj \
+          dotnet test tests/pass.tests/pass.tests.csproj \
             -c Debug --no-build \
             --collect:"XPlat Code Coverage" \
             /p:CoverletOutputFormat=cobertura \

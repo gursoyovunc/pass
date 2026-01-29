@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-if ! head -1 "$1" | grep -qE "^(feat|fix|ci|chore|docs|test|style|refactor)(\([^)]+\))?: [^\n]+$"; then
-    echo "Aborting commit. Your commit message is invalid. Please follow conventional commit message format." >&2
-    exit 1
-fi
-if [ "$(head -1 "$1" | head -c 51 | wc -c)" -gt 50 ]; then
-    echo "Aborting commit. Your commit message is too long." >&2
+first_line="$(head -1 "$1")"
+
+# Validate type/scope/subject format AND subject length (<= 80)
+if ! printf '%s\n' "$first_line" | grep -qE '^(feat|fix|ci|chore|docs|test|style|refactor)(\([^)]+\))?: [^\n]{1,80}$'; then
+    echo "Aborting commit. Your commit message is invalid or too long (max 80 chars for subject)." >&2
+    echo "Make sure you use conventional commit messages." >&2
     exit 1
 fi

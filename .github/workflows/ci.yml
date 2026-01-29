@@ -52,6 +52,10 @@ jobs:
           DOTNET_ROOT: /usr/share/dotnet
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      # Install libxml2-utils for xmllint
+      - name: Install libxml2-utils for xmllint
+        run: sudo apt-get update && sudo apt-get install -y libxml2-utils
+
       # Run tests with coverage
       - name: Test with coverage
         id: coverage

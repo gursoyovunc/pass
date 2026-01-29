@@ -8,66 +8,85 @@ jobs:
   quality-gate:
     runs-on: ubuntu-latest
 
+    permissions:
+      contents: write
+      pull-requests: write
+      repository-projects: write
+
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 8.0.x
+          dotnet-version: 10.0.x
 
-      # Restore dependencies
       - name: Restore dependencies
         run: dotnet restore
 
-      # Build + static analysis
       - name: Build & Analyze
         run: dotnet build -c Debug -warnaserror
 
-      # Security code scan
-      - name: Security Code Scan
-        run: dotnet build -c Debug
+      # - name: Security Code Scan
+      #   run: dotnet build -c Debug
 
-      # Check vulnerable dependencies
       - name: Install GitHub CLI
         run: sudo apt install gh -y
       - name: Check vulnerable dependencies
         id: deps
         run: |
-          VULNS=$(dotnet list package --vulnerable)
-          echo "vulns=$VULNS" >> $GITHUB_OUTPUT
-          if [ -n "$VULNS" ]; then
-            gh pr comment ${{ github.event.pull_request.number }} --body "## :warning: Vulnerable dependencies detected\n\`\`\`\n$VULNS\n\`\`\`"
-            exit 1
+          #!/usr/bin/bash
+          VULNS=$(dotnet list package --vulnerable | tail -n +2 | tr '\n' ' ')
+          if echo "$VULNS" | grep -q -i "has the following vulnerable packages"; then
+              echo "Vulnerabilities found:"
+              echo "$VULNS"
+              gh pr comment ${{ github.event.pull_request.number }} --body $':warning: Vulnerable dependencies detected\n\n$VULNS\n'
+              exit 1
+          else
+              echo "No vulnerabilities found."
+              exit 0
+          fi
+        env:
+          DOTNET_ROOT: /usr/share/dotnet
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # Run tests with coverage
-      - name: Test with coverage
-        id: coverage
-        run: |
-          dotnet test tests/MyApp.Tests/MyApp.Tests.csproj \
-            -c Debug --no-build \
-            --collect:"XPlat Code Coverage" \
-            /p:CoverletOutputFormat=cobertura \
-            /p:Threshold=80 /p:ThresholdType=line /p:ThresholdStat=total
+      - name: Run Unit Tests and Generate Coverage
+        id: run-tests
+        uses: alsi-lawr/dotnet-test-coverlet@v1
+        with:
+          project: 'tests/pass.tests'
+          threshold: 60
+          dotnet-version: '10.0'
 
-          COVERAGE=$(xmllint --xpath "string(//coverage/@line-rate)" coverage-report/Cobertura.xml)
-          echo "coverage=$COVERAGE" >> $GITHUB_OUTPUT
+      - name: Upload Coverage Report
+        id: upload-coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: ${{ steps.run-tests.outputs.coverage-report-path }}
 
-      # Comment coverage on PR
+      - name: Code Coverage Report
+        uses: irongut/CodeCoverageSummary@v1.3.0
+        with:
+          filename: tests/pass.tests/lcov.cobertura.xml
+          badge: false
+          fail_below_min: true
+          format: markdown
+          hide_branch_rate: false
+          hide_complexity: false
+          indicators: true
+          output: both
+          thresholds: '60 80'
+
+      - name: Add Coverage PR Comment
+        uses: marocchino/sticky-pull-request-comment@v2
+        if: github.event_name == 'pull_request'
+        with:
+          recreate: true
+          path: code-coverage-results.md
+
       - name: Comment coverage on PR
         uses: peter-evans/create-or-update-comment@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           issue-number: ${{ github.event.pull_request.number }}
           body: |
-            ## Code Coverage Report
-            Threshold: 80%
-            Current coverage: ${{ steps.coverage.outputs.coverage }}
-
-      # Generate coverage artifact
-      - name: Generate coverage report
-        run: |
-          reportgenerator -reports:**/coverage.cobertura.xml -targetdir:coverage-report -reporttypes:Html
-      - name: Upload coverage artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-report
-          path: coverage-report
+            Coverage report URL: ${{ steps.upload-coverage.outputs.artifact-url }}

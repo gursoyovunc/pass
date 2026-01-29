@@ -52,24 +52,6 @@ jobs:
           DOTNET_ROOT: /usr/share/dotnet
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # # Install libxml2-utils for xmllint
-      # - name: Install libxml2-utils for xmllint
-      #   run: sudo apt-get update && sudo apt-get install -y libxml2-utils
-
-      # # Run tests with coverage
-      # - name: Test with coverage
-      #   id: coverage
-      #   run: |
-      #     dotnet test tests/pass.tests/pass.tests.csproj \
-      #       -c Debug --no-build \
-      #       --collect:"XPlat Code Coverage" \
-      #       /p:CoverletOutput=coverage-report/ \
-      #       /p:CoverletOutputFormat=cobertura \
-      #       /p:Threshold=80 /p:ThresholdType=line /p:ThresholdStat=total
-
-      #     COVERAGE=$(xmllint --xpath "string(//coverage/@line-rate)" coverage-report/coverage.cobertura.xml)
-      #     echo "coverage=$COVERAGE" >> $GITHUB_OUTPUT
-
       - name: Run Unit Tests and Generate Coverage
         id: run-tests
         uses: alsi-lawr/dotnet-test-coverlet@v1
@@ -94,14 +76,4 @@ jobs:
           body: |
             ## Code Coverage Report
             Threshold: 80%
-            Current coverage: ${{ steps.coverage.outputs.coverage }}
-
-      # Generate coverage artifact
-      - name: Generate coverage report
-        run: |
-          reportgenerator -reports:**/coverage.cobertura.xml -targetdir:coverage-report -reporttypes:Html
-      - name: Upload coverage artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-report
-          path: coverage-report
+            Current coverage: ${{ steps.run-tests.outputs.coverage-report-path }}

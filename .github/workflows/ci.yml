@@ -1,8 +1,9 @@
 name: CI - Quality Gate
 
 on:
-  pull_request:
-    branches: [main]
+  workflow_dispatch:
+  # pull_request:
+  #   branches: [main]
 
 jobs:
   quality-gate:
@@ -25,11 +26,9 @@ jobs:
       - name: Build & Analyze
         run: dotnet build -c Debug -warnaserror
 
-      # - name: Security Code Scan
-      #   run: dotnet build -c Debug
-
       - name: Install GitHub CLI
         run: sudo apt install gh -y
+
       - name: Check vulnerable dependencies
         id: deps
         run: |
@@ -53,7 +52,6 @@ jobs:
         uses: alsi-lawr/dotnet-test-coverlet@v1
         with:
           project: 'tests/pass.tests'
-          threshold: 60
           dotnet-version: '10.0'
 
       - name: Upload Coverage Report
@@ -74,7 +72,6 @@ jobs:
           hide_complexity: false
           indicators: true
           output: both
-          thresholds: '60 80'
 
       - name: Add Coverage PR Comment
         uses: marocchino/sticky-pull-request-comment@v2

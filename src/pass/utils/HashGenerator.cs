@@ -2,7 +2,7 @@
 
 namespace pass.utils;
 
-public static class HashGenerator
+internal static class HashGenerator
 {
     private const int DefaultIterations = 600_000;
     private const int OutputLength      = 32;

@@ -1,6 +1,7 @@
 name: Release / Pre-release
 
 on:
+  workflow_dispatch:
   # Trigger on tag push (official release) or PR merge (pre-release)
   push:
     tags:
@@ -23,7 +24,7 @@ jobs:
 
       - uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 8.0.x
+          dotnet-version: 10.0.x
 
       # Install GitVersion
       - name: Install GitVersion
@@ -61,12 +62,12 @@ jobs:
 
       # Restore dependencies
       - name: Restore
-        run: dotnet restore src/MyApp/MyApp.csproj
+        run: dotnet restore src/pass/pass.csproj
 
       # Publish single-file, trimmed, self-contained EXE with version & icon
       - name: Publish EXE
         run: |
-          dotnet publish src/MyApp/MyApp.csproj \
+          dotnet publish src/pass/pass.csproj \
             -c Release -r ${{ matrix.rid }} \
             /p:PublishSingleFile=true \
             /p:PublishTrimmed=true \
@@ -75,7 +76,7 @@ jobs:
             /p:AssemblyVersion=${{ steps.gitversion.outputs.version }} \
             /p:FileVersion=${{ steps.gitversion.outputs.version }} \
             /p:InformationalVersion=${{ steps.gitversion.outputs.version }} \
-            /p:ApplicationIcon=src/MyApp/icon.ico \
+            /p:ApplicationIcon=src/pass/icon.ico \
             -o out/${{ matrix.rid }}
 
       # Zip artifacts

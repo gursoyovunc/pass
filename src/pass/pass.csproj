@@ -8,6 +8,23 @@
         <Nullable>enable</Nullable>
         
         <ApplicationIcon>icon.ico</ApplicationIcon>
+        
+        <AnalysisLevel>latest-all</AnalysisLevel>
     </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Puma.Security.Rules.2022" Version="2.4.23">
+        <PrivateAssets>all</PrivateAssets>
+        <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      </PackageReference>
+      <PackageReference Include="SecurityCodeScan.VS2019" Version="5.6.7">
+        <PrivateAssets>all</PrivateAssets>
+        <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      </PackageReference>
+      <PackageReference Include="SonarAnalyzer.CSharp" Version="10.18.0.131500">
+        <PrivateAssets>all</PrivateAssets>
+        <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      </PackageReference>
+    </ItemGroup>
 
 </Project>
